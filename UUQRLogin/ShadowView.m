@@ -31,25 +31,25 @@
         self.infoLabel.textColor = [UIColor whiteColor];
         self.infoLabel.textAlignment = NSTextAlignmentCenter;
         [self addSubview:self.infoLabel];
-//        [self.infoLabel sizeToFit];
 
     }
     return self;
 }
 
-- (void)start {
+- (void)uu_scanStart {
     [self addAnimationAboutScan];
 }
 
-- (void)stop
+- (void)uu_scanStop
 {
     [self removeAnimationAboutScan];
 }
 
+/// 添加扫码动画
 -(void)addAnimationAboutScan{
     
     self.lineView.hidden = NO;
-    CABasicAnimation *animation = [ShadowView moveYTime:3 fromY:[NSNumber numberWithFloat:0] toY:[NSNumber numberWithFloat:(self.showSize.height-1)] rep:OPEN_MAX];
+    CABasicAnimation *animation = [ShadowView moveYTime:3 fromY:[NSNumber numberWithFloat:0] toY:[NSNumber numberWithFloat:(self.uu_showSize.height-1)] rep:OPEN_MAX];
     [self.lineView.layer addAnimation:animation forKey:@"LineAnimation"];
 }
 
@@ -59,7 +59,6 @@
     [animationMove setFromValue:fromY];
     [animationMove setToValue:toY];
     animationMove.duration = time;
-//    animationMove.delegate = self;
     animationMove.repeatCount  = rep;
     animationMove.fillMode = kCAFillModeForwards;
     animationMove.removedOnCompletion = NO;
@@ -73,18 +72,18 @@
     self.lineView.hidden = YES;
 }
 
--(void)layoutSubviews{
+- (void)layoutSubviews {
     
     [super layoutSubviews];
     
-    self.infoLabel.frame = CGRectMake(0, (self.frame.size.height + self.showSize.height) / 2, self.frame.size.width, 20);
+    self.infoLabel.frame = CGRectMake(0, (self.frame.size.height + self.uu_showSize.height) / 2, self.frame.size.width, 20);
     
-    self.lineView.frame = CGRectMake((self.frame.size.width - self.showSize.width) / 2, (self.frame.size.height - self.showSize.height) / 2 - 10, self.showSize.width, 2);
-    [self start];
+    self.lineView.frame = CGRectMake((self.frame.size.width - self.uu_showSize.width) / 2, (self.frame.size.height - self.uu_showSize.height) / 2 - 10, self.uu_showSize.width, 2);
+    [self uu_scanStart];
     
 }
 
--(void)drawRect:(CGRect)rect{
+- (void)drawRect:(CGRect)rect {
     
     [super drawRect:rect];
     
@@ -95,7 +94,7 @@
     CGContextFillRect(ctx, rect);   //draw the transparent layer
         
     //中间清空矩形框
-    CGRect clearDrawRect = CGRectMake((rect.size.width - self.showSize.width) / 2, (rect.size.height - self.showSize.height) / 2 - 10, self.showSize.width, self.showSize.height);
+    CGRect clearDrawRect = CGRectMake((rect.size.width - self.uu_showSize.width) / 2, (rect.size.height - self.uu_showSize.height) / 2 - 10, self.uu_showSize.width, self.uu_showSize.height);
     CGContextClearRect(ctx, clearDrawRect);
    
     //边框

@@ -11,9 +11,13 @@
 NS_ASSUME_NONNULL_BEGIN
 
 @interface ShadowView : UIView
-@property (nonatomic, assign) CGSize showSize;
-- (void)start;
-- (void)stop;
+@property (nonatomic, assign) CGSize uu_showSize;//透明矩形的尺寸
+
+/// 开始扫码
+- (void)uu_scanStart;
+
+/// 停止扫码
+- (void)uu_scanStop;
 
 @end
 

@@ -26,13 +26,16 @@
 
 @property (nonatomic,strong) ShadowView *shadowView;//蒙层
 
+@property (nonatomic,strong) UILabel *titleLable;//标题
+
+@property (nonatomic,strong) UIButton *backBtn;//返回按钮
+
 @end
 
 @implementation QRViewController
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    // Do any additional setup after loading the view.
     self.view.backgroundColor = [UIColor whiteColor];
     
     //监听屏幕旋转
@@ -41,11 +44,11 @@
     [self loadHeadView];
     [self.view.layer addSublayer:self.videoPreviewLayer];
     [self startCapture];
-//    [self loadShadowView];
+    //    [self loadShadowView];
     
-    self.shadowView = [[ShadowView alloc] initWithFrame:CGRectMake(0, 40, kWidth, kHeight - 40)];
-       [self.view addSubview:self.shadowView];
-       self.shadowView.showSize = customShowSize;
+    self.shadowView = [[ShadowView alloc] initWithFrame:CGRectMake(0, 40, kWidth, kHeight-40)];
+    self.shadowView.uu_showSize = customShowSize;
+    [self.view addSubview:self.shadowView];
 }
 
 - (void)clickBackBtn {
@@ -56,23 +59,30 @@
     UIButton *backBtn = [UIButton buttonWithType:UIButtonTypeCustom];
     backBtn.frame = CGRectMake(20, 0, 40, 40);
     backBtn.titleLabel.font = [UIFont systemFontOfSize:12];
-    [backBtn setTitle:@"返回" forState:UIControlStateNormal];
-    [backBtn setTitleColor:[UIColor blackColor] forState:UIControlStateNormal];
+    [backBtn setImage:[UIImage imageNamed:@"SSBundle.bundle/icon_back"] forState:UIControlStateNormal];
     [backBtn addTarget:self action:@selector(clickBackBtn) forControlEvents:UIControlEventTouchUpInside];
     [self.view addSubview:backBtn];
+    self.backBtn = backBtn;
     
     UILabel *titleLable = [[UILabel alloc] initWithFrame:CGRectMake(0, 0, kWidth, 40)];
-    titleLable.text = @"客户端扫码登录";
+    titleLable.text = @"神雕侠侣客户端扫码登录";
     titleLable.textAlignment = NSTextAlignmentCenter;
     titleLable.textColor = [UIColor blackColor];
     titleLable.font = [UIFont systemFontOfSize:18];
     [self.view addSubview:titleLable];
+    self.titleLable = titleLable;
 }
 
 //开始扫描
 - (void)startCapture{
     if (![self requestDeviceAuthorization]) {
-        NSLog(@"没有访问相机权限！");
+        [self alertWithTitle:@"没有相机权限" message:@"请在设置-通用-相机-允许访问" leftStr:@"去设置" rightStr:@"取消" leftItem:^{
+            NSURL *openURL = [NSURL URLWithString:UIApplicationOpenSettingsURLString];
+            [[UIApplication sharedApplication] openURL:openURL];
+        } rightItem:^{
+            
+        }];
+        
         return;
     }
     
@@ -89,23 +99,27 @@
     }
     [self.captureSession commitConfiguration];
     [self.captureSession startRunning];
+    [self.shadowView uu_scanStart];
 }
+
 //停止扫描
 - (void)stopCapture{
     [self.captureSession stopRunning];
+    [self.shadowView uu_scanStop];
 }
 
 #pragma mark - AVCaptureMetadataOutputObjectsDelegate
 - (void)captureOutput:(AVCaptureOutput *)output didOutputMetadataObjects:(NSArray<__kindof AVMetadataObject *> *)metadataObjects fromConnection:(AVCaptureConnection *)connection{
     //获取到扫描的数据
-    AVMetadataMachineReadableCodeObject *dateObject = (AVMetadataMachineReadableCodeObject *) [metadataObjects lastObject];
-    NSLog(@"metadataObjects[last]==%@",dateObject.stringValue);
+    AVMetadataMachineReadableCodeObject *dataObject = (AVMetadataMachineReadableCodeObject *) [metadataObjects lastObject];
+    [self stopCapture];
     //识别结果，作比对和登录跳转
-    [self.shadowView stop];
-//    [self.captureSession stopRunning];
+    NSLog(@"----%@", dataObject);
+    //    [self.captureSession stopRunning];
     
 }
-#pragma makr - 请求权限
+
+#pragma mark - 请求权限
 - (BOOL)requestDeviceAuthorization{
     
     AVAuthorizationStatus deviceStatus = [AVCaptureDevice authorizationStatusForMediaType:AVMediaTypeVideo];
@@ -116,7 +130,12 @@
     return YES;
 }
 
+//判断当前屏幕方向
 - (void)layerOrientationByDeviceOritation {
+    self.titleLable.frame = CGRectMake(0, 0, kWidth, 40);
+    self.videoPreviewLayer.frame = _videoPreviewLayer.frame = CGRectMake(0, 40, kWidth, kHeight-40);
+    self.shadowView.frame = CGRectMake(0, 40, kWidth, kHeight-40);
+    [self.shadowView setNeedsDisplay];
     
     UIDeviceOrientation screenOrientation = [UIDevice currentDevice].orientation;
     
@@ -125,6 +144,7 @@
         case UIDeviceOrientationPortraitUpsideDown:
         case UIDeviceOrientationFaceDown:
         case UIDeviceOrientationFaceUp:
+            self.videoPreviewLayer.connection.videoOrientation = UIDeviceOrientationPortrait;
             break;
             
         case UIDeviceOrientationLandscapeRight:
@@ -136,10 +156,65 @@
             break;
             
         default:
-            self.videoPreviewLayer.connection.videoOrientation = UIDeviceOrientationLandscapeRight;
+            self.videoPreviewLayer.connection.videoOrientation = UIDeviceOrientationLandscapeLeft;
             break;
     }
     
+}
+
+
+/// 根据url拼接参数
+/// @param url 拼接好的参数
+- (NSDictionary *)paramerWithURL:(NSURL *)url {
+    
+    NSMutableDictionary *paramer = [[NSMutableDictionary alloc]init];
+    //创建url组件类
+    NSURLComponents *urlComponents = [[NSURLComponents alloc] initWithString:url.absoluteString];
+    //遍历所有参数，添加入字典
+    [urlComponents.queryItems enumerateObjectsUsingBlock:^(NSURLQueryItem * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+        [paramer setObject:obj.value forKey:obj.name];
+    }];
+    return paramer;
+}
+
+- (void)alertWithTitle:(NSString *)title message:(NSString *)message leftStr:(NSString * __nullable)leftStr rightStr:(NSString * __nullable)rightStr leftItem:(void (^ __nullable)(void))leftItem rightItem:(void (^ __nullable)(void))rightItem {
+    
+    UIAlertController *alertController = [UIAlertController alertControllerWithTitle:title message:message preferredStyle:UIAlertControllerStyleAlert];
+    
+    if (leftStr) {
+        UIAlertAction *leftAction = [UIAlertAction actionWithTitle:leftStr style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+            if (leftItem) {
+                leftItem();
+            }
+        }];
+        [alertController addAction:leftAction];
+    }
+    
+    if (rightStr) {
+        UIAlertAction *rightAction = [UIAlertAction actionWithTitle:rightStr style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+            if (rightItem) {
+                rightItem();
+            }
+        }];
+        [alertController addAction:rightAction];
+    }
+    
+    [self presentViewController:alertController animated:YES completion:nil];
+    
+}
+
+
+#pragma mark - 强制转屏
+- (BOOL)shouldAutorotate {
+    return YES;
+}
+
+- (UIInterfaceOrientationMask)supportedInterfaceOrientations {
+    return UIInterfaceOrientationMaskAll;
+}
+
+- (UIInterfaceOrientation)preferredInterfaceOrientationForPresentation {
+    return UIInterfaceOrientationPortrait;
 }
 
 #pragma mark - 懒加载
@@ -150,6 +225,7 @@
     }
     return _captureSession;
 }
+
 - (AVCaptureDeviceInput *)deviceInput{
     if (!_deviceInput) {
         AVCaptureDevice *device = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeVideo];
@@ -161,14 +237,16 @@
     }
     return _deviceInput;
 }
+
 - (AVCaptureMetadataOutput *)metaDataOutput{
     if (!_metaDataOutput) {
         _metaDataOutput = [[AVCaptureMetadataOutput alloc] init];
         [_metaDataOutput setMetadataObjectsDelegate:self queue:dispatch_get_main_queue()];
- 
+        
     }
     return _metaDataOutput;
 }
+
 - (AVCaptureVideoPreviewLayer *)videoPreviewLayer{
     if (!_videoPreviewLayer) {
         _videoPreviewLayer = [AVCaptureVideoPreviewLayer layerWithSession:self.captureSession];
@@ -185,6 +263,7 @@
 }
 
 - (void)dealloc {
+    
     [self.captureSession stopRunning];
     self.deviceInput = nil;
     self.metaDataOutput = nil;
