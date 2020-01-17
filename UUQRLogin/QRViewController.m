@@ -41,10 +41,11 @@
     //监听屏幕旋转
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(viewDidLayoutSubviews) name:UIDeviceOrientationDidChangeNotification object:nil];
     
+    [self layerOrientationByDeviceOritation];
+    
     [self loadHeadView];
     [self.view.layer addSublayer:self.videoPreviewLayer];
     [self startCapture];
-    //    [self loadShadowView];
     
     self.shadowView = [[ShadowView alloc] initWithFrame:CGRectMake(0, 40, kWidth, kHeight-40)];
     self.shadowView.uu_showSize = customShowSize;
@@ -141,9 +142,6 @@
     
     switch (screenOrientation) {
         case UIDeviceOrientationPortrait:
-        case UIDeviceOrientationPortraitUpsideDown:
-        case UIDeviceOrientationFaceDown:
-        case UIDeviceOrientationFaceUp:
             self.videoPreviewLayer.connection.videoOrientation = UIDeviceOrientationPortrait;
             break;
             
@@ -155,8 +153,13 @@
             self.videoPreviewLayer.connection.videoOrientation = UIDeviceOrientationLandscapeLeft;
             break;
             
+        case UIDeviceOrientationPortraitUpsideDown:
+        case UIDeviceOrientationFaceDown:
+        case UIDeviceOrientationFaceUp:
+            break;
+            
         default:
-            self.videoPreviewLayer.connection.videoOrientation = UIDeviceOrientationLandscapeLeft;
+            self.videoPreviewLayer.connection.videoOrientation = UIDeviceOrientationPortrait;
             break;
     }
     
@@ -211,10 +214,6 @@
 
 - (UIInterfaceOrientationMask)supportedInterfaceOrientations {
     return UIInterfaceOrientationMaskAll;
-}
-
-- (UIInterfaceOrientation)preferredInterfaceOrientationForPresentation {
-    return UIInterfaceOrientationPortrait;
 }
 
 #pragma mark - 懒加载
